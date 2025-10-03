@@ -1,13 +1,18 @@
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 public class ReflectUtil {
-
     private final Class<?> targetClass;
 
     public ReflectUtil(Class<?> targetClass) {
@@ -54,18 +59,83 @@ public class ReflectUtil {
         }
     }
 
+    // New method to get info from a .jar file
+    public static String getJarInfoAsJson(String jarPath) throws Exception {
+        List<Class<?>> classes = loadClassesFromJar(jarPath);
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < classes.size(); i++) {
+            if (i > 0) sb.append(",");
+            ReflectUtil util = new ReflectUtil(classes.get(i));
+            sb.append(util.toJSON());
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    // Helper method to load classes from a .jar file
+    private static List<Class<?>> loadClassesFromJar(String jarPath) throws Exception {
+        List<Class<?>> classes = new ArrayList<>();
+        URL jarUrl = new File(jarPath).toURI().toURL();
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] { jarUrl }, ClassLoader.getSystemClassLoader())) {
+            try (JarFile jarFile = new JarFile(new File(jarPath))) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().endsWith(".class")) {
+                        String className = entry.getName()
+                                .replace("/", ".")
+                                .replace(".class", "");
+                        Class<?> clazz = classLoader.loadClass(className);
+                        classes.add(clazz);
+                    }
+                }
+            }
+        }
+        return classes;
+    }
+
+    // Convert class info to JSON
+    public String toJSON() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        sb.append("\"className\":\"").append(targetClass.getName()).append("\",");
+        sb.append("\"fields\":[");
+        List<String> fields = getFieldNames();
+        for (int i = 0; i < fields.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append("\"").append(fields.get(i)).append("\"");
+        }
+        sb.append("],");
+        sb.append("\"methods\":[");
+        List<String> methods = getMethodNames();
+        for (int i = 0; i < methods.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append("\"").append(methods.get(i)).append("\"");
+        }
+        sb.append("],");
+        sb.append("\"constructors\":[");
+        List<String> constructors = getConstructorSignatures();
+        for (int i = 0; i < constructors.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append("\"").append(constructors.get(i)).append("\"");
+        }
+        sb.append("]");
+        sb.append("}");
+        return sb.toString();
+    }
 
     public static void main(String[] args) {
         try {
-            ReflectUtil util = new ReflectUtil(Class.forName("user"));
-
-            System.out.println("Field names: " + util.getFieldNames());
-            System.out.println("Method names: " + util.getMethodNames());
-            System.out.println("Constructors: " + util.getConstructorSignatures());
-
-
-        } catch (ClassNotFoundException e) {
-
+            String jarPath = "target/reflection-1.0-SNAPSHOT.jar";
+            String json = getJarInfoAsJson(jarPath);
+            try (java.io.FileWriter file = new java.io.FileWriter("output.json")) {
+                file.write(json);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
