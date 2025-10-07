@@ -129,6 +129,7 @@ public class ReflectUtil {
         try {
             String jarPath = "target/reflection-1.0-SNAPSHOT.jar";
             String json = getJarInfoAsJson(jarPath);
+            System.out.println(json.toString());
             try (java.io.FileWriter file = new java.io.FileWriter("output.json")) {
                 file.write(json);
             } catch (IOException e) {
