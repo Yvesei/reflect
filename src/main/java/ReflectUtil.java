@@ -13,7 +13,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ReflectUtil {
-    private final Class<?> targetClass;
+    protected final Class<?> targetClass;
 
     public ReflectUtil(Class<?> targetClass) {
         this.targetClass = targetClass;
@@ -128,14 +128,17 @@ public class ReflectUtil {
     public static void main(String[] args) {
         try {
             String jarPath = "target/reflection-1.0-SNAPSHOT.jar";
-            String json = getJarInfoAsJson(jarPath);
-            try (java.io.FileWriter file = new java.io.FileWriter("output.json")) {
-                file.write(json);
-            } catch (IOException e) {
-                e.printStackTrace();
+            List<Class<?>> classes = loadClassesFromJar(jarPath);
+            for (Class<?> clazz : classes) {
+                EnhancedReflectUtil util = new EnhancedReflectUtil(clazz);
+                System.out.println("Class: " + clazz.getName());
+                System.out.println("Method Line Numbers: " + util.getMethodLineNumbers());
+                System.out.println("Method Calls: " + util.getMethodCalls());
+                System.out.println("Field Visibilities: " + util.getFieldVisibilities());
+                System.out.println("Fields Used in Methods: " + util.getFieldsUsedInMethods());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    }    
 }
