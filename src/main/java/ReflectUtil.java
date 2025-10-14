@@ -74,7 +74,7 @@ public class ReflectUtil {
     }
 
     // Helper method to load classes from a .jar file
-    private static List<Class<?>> loadClassesFromJar(String jarPath) throws Exception {
+    static List<Class<?>> loadClassesFromJar(String jarPath) throws Exception {
         List<Class<?>> classes = new ArrayList<>();
         URL jarUrl = new File(jarPath).toURI().toURL();
         try (URLClassLoader classLoader = new URLClassLoader(new URL[] { jarUrl }, ClassLoader.getSystemClassLoader())) {
@@ -128,15 +128,17 @@ public class ReflectUtil {
     public static void main(String[] args) {
         try {
             String jarPath = "target/reflection-1.0-SNAPSHOT.jar";
-            List<Class<?>> classes = loadClassesFromJar(jarPath);
-            for (Class<?> clazz : classes) {
-                EnhancedReflectUtil util = new EnhancedReflectUtil(clazz);
-                System.out.println("Class: " + clazz.getName());
-                System.out.println("Method Line Numbers: " + util.getMethodLineNumbers());
-                System.out.println("Method Calls: " + util.getMethodCalls());
-                System.out.println("Field Visibilities: " + util.getFieldVisibilities());
-                System.out.println("Fields Used in Methods: " + util.getFieldsUsedInMethods());
-            }
+
+            //Get JSON output
+            String jsonOutput = ReflectUtil.getJarInfoAsJson(jarPath);
+            System.out.println("JSON Output:");
+            System.out.println(jsonOutput);
+
+            // Connect to Neo4j Aura
+            String uri = "neo4j+s://f212613b.databases.neo4j.io";
+            String username = "neo4j";
+            String password = "H26wABr2QXbeLnUgqVMPfpdciXQC1zE0nVBB7DVY77I";
+            Neo4jAuraClient neo4jClient = new Neo4jAuraClient(uri, username, password);
         } catch (Exception e) {
             e.printStackTrace();
         }
