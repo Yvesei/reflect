@@ -131,6 +131,11 @@ public class ReflectUtil {
 
             //Get JSON output
             String jsonOutput = ReflectUtil.getJarInfoAsJson(jarPath);
+            try (java.io.FileWriter file = new java.io.FileWriter("output.json")) {
+                file.write(jsonOutput);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             System.out.println("JSON Output:");
             System.out.println(jsonOutput);
 
