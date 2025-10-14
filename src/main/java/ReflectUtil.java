@@ -137,6 +137,12 @@ public class ReflectUtil {
                 System.out.println("Field Visibilities: " + util.getFieldVisibilities());
                 System.out.println("Fields Used in Methods: " + util.getFieldsUsedInMethods());
             }
+            String json = getJarInfoAsJson(jarPath);
+            try (java.io.FileWriter file = new java.io.FileWriter("output.json")) {
+                file.write(json);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
