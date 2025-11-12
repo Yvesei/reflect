@@ -11,6 +11,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.Map;
+import io.github.cdimascio.dotenv.Dotenv;
+import java.util.concurrent.TimeUnit;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.QueryConfig;
 
 public class ReflectUtil {
     protected final Class<?> targetClass;
@@ -140,10 +146,32 @@ public class ReflectUtil {
             System.out.println(jsonOutput);
 
             // Connect to Neo4j Aura
-            String uri = "neo4j+s://f212613b.databases.neo4j.io";
-            String username = "neo4j";
-            String password = "H26wABr2QXbeLnUgqVMPfpdciXQC1zE0nVBB7DVY77I";
-            Neo4jAuraClient neo4jClient = new Neo4jAuraClient(uri, username, password);
+            var dotenv = Dotenv.configure()
+                    .filename(".env")
+                    .load();
+
+            final String dbUri = dotenv.get("NEO4J_URI");
+            final String dbUser = dotenv.get("NEO4J_USERNAME");
+            final String dbPassword = dotenv.get("NEO4J_PASSWORD");
+
+            try (var driver = GraphDatabase.driver(dbUri, AuthTokens.basic(dbUser, dbPassword))) {
+                driver.verifyConnectivity();
+                System.out.println("Connection established.");
+            }
+
+
+//            var result = driver.executableQuery("""
+//            CREATE (a:Person {name: $name})
+//            CREATE (b:Person {name: $friendName})
+//            CREATE (a)-[:KNOWS]->(b)
+//            """)
+//                    .withParameters(Map.of("name", "Alice", "friendName", "David"))
+//                    .withConfig(QueryConfig.builder().withDatabase("<database-name>").build())
+//                    .execute();
+//            var summary = result.summary();
+//            System.out.printf("Created %d records in %d ms.%n",
+//                    summary.counters().nodesCreated(),
+//                    summary.resultAvailableAfter(TimeUnit.MILLISECONDS));
         } catch (Exception e) {
             e.printStackTrace();
         }
