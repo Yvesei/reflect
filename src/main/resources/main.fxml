@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.*?>
+
+<VBox fx:id="root"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="app.controller.MainController"
+      alignment="CENTER"
+      spacing="20"
+      prefWidth="600"
+      prefHeight="400"
+      style="-fx-background-color: #fafafa;">
+
+    <children>
+
+        <Label text="Java Analyzer"
+               style="-fx-font-size: 26px; -fx-font-weight: bold;" />
+
+        <Button fx:id="openButton"
+                text="Open Java Project"
+                onAction="#openFileChooser"
+                style="-fx-font-size: 18px; -fx-padding: 10px 20px;" />
+
+        <Label fx:id="statusLabel"
+               text="Waiting..."
+               style="-fx-font-size: 14px; -fx-text-fill: grey;" />
+
+    </children>
+
+</VBox>

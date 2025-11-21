@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<ScrollPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controller.ResultsController"
+            fitToWidth="true">
+
+    <VBox spacing="18" style="-fx-padding: 25;">
+
+        <Label text="Static Analysis Dashboard"
+               style="-fx-font-size: 26px; -fx-font-weight: bold;" />
+
+        <TitledPane text="God Classes">
+            <content>
+                <ListView fx:id="godList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Feature Envy">
+            <content>
+                <ListView fx:id="envyList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Data Classes">
+            <content>
+                <ListView fx:id="dataList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Long Methods">
+            <content>
+                <ListView fx:id="longMethodList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Large Classes">
+            <content>
+                <ListView fx:id="largeClassList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Message Chains">
+            <content>
+                <ListView fx:id="messageChainList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Middle Man">
+            <content>
+                <ListView fx:id="middleManList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Shotgun Surgery">
+            <content>
+                <ListView fx:id="shotgunList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Divergent Change">
+            <content>
+                <ListView fx:id="divergentList"/>
+            </content>
+        </TitledPane>
+
+        <TitledPane text="Dead Code">
+            <content>
+                <ListView fx:id="deadCodeList"/>
+            </content>
+        </TitledPane>
+
+    </VBox>
+
+</ScrollPane>
