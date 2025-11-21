@@ -18,6 +18,8 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 public class MainController {
@@ -29,30 +31,29 @@ public class MainController {
     private final Neo4jService neo = new Neo4jService("bolt://localhost:7687", "neo4j", "password");
     private final GraphImporter importer = new GraphImporter(neo);
 
-    // ---------------------------------------------
-    // UI button: choose file OR folder
-    // ---------------------------------------------
+    // -----------------------------------------------------
+    // Choose MULTIPLE FILES or a FOLDER
+    // -----------------------------------------------------
     @FXML
     public void openFileChooser() {
 
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Select .java / .class file (or choose a folder instead)");
-        chooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Java Files", "*.java", "*.class")
+        chooser.setTitle("Select .java / .class files (or choose a folder)");
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Java / Class / Jar Files", "*.java", "*.class", "*.jar")
         );
 
-        // Let user pick a file FIRST
-        File file = chooser.showOpenDialog(openButton.getScene().getWindow());
-
-        if (file != null) {
-            statusLabel.setText("Analyzing: " + file.getName());
-            analyzeJavaProject(file);
+        // MULTIPLE FILES
+        List<File> files = chooser.showOpenMultipleDialog(openButton.getScene().getWindow());
+        if (files != null && !files.isEmpty()) {
+            statusLabel.setText("Analyzing " + files.size() + " files...");
+            analyzeMultipleFiles(files);
             return;
         }
 
-        // Otherwise: let them pick a folder
+        // SINGLE FOLDER
         DirectoryChooser dc = new DirectoryChooser();
-        dc.setTitle("Or choose a folder to analyze");
+        dc.setTitle("Choose a folder to analyze");
         File folder = dc.showDialog(openButton.getScene().getWindow());
 
         if (folder == null) {
@@ -64,53 +65,71 @@ public class MainController {
         analyzeJavaProject(folder);
     }
 
-    // ---------------------------------------------
-    // Run reflection → export JSON → load Neo4j → detect smells
-    // ---------------------------------------------
+    // -----------------------------------------------------
+    // Analyze MULTIPLE FILES by building a temporary project
+    // -----------------------------------------------------
+    private void analyzeMultipleFiles(List<File> files) {
+        try {
+            // Clean & recreate temp directory
+            File tempDir = new File("/tmp/javafx_multi/");
+            if (tempDir.exists()) {
+                for (File f : tempDir.listFiles()) f.delete();
+            }
+            tempDir.mkdirs();
+
+            // Copy all selected files into temp project
+            for (File f : files) {
+                File out = new File(tempDir, f.getName());
+                Files.copy(f.toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // Analyze as a project
+            analyzeJavaProject(tempDir);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            statusLabel.setText("Error: " + e.getMessage());
+        }
+    }
+
+    // -----------------------------------------------------
+    // Analyze project (single file OR folder)
+    // -----------------------------------------------------
     private void analyzeJavaProject(File fileOrFolder) {
         try {
 
             SystemModel model;
 
-            // If folder → analyze all .java + .class
             if (fileOrFolder.isDirectory()) {
+                cleanClassFiles(fileOrFolder);
+
                 model = analyzer.buildProjectModel(fileOrFolder);
-            }
-            // If single file → normal behavior
-            else {
+            } else {
                 InputType type = fileOrFolder.getName().endsWith(".java")
                         ? InputType.JAVA_SOURCE
                         : InputType.CLASS_FILE;
-
                 model = analyzer.buildModel(fileOrFolder, type);
             }
 
-            // 2. Export JSON
             File jsonOut = new File("/tmp/model.json");
             try (FileWriter writer = new FileWriter(jsonOut)) {
                 writer.write(model.toJson());
             }
 
-            // 3. Import into Neo4j
             importer.importJson(jsonOut.getAbsolutePath());
 
-            // 4. Run detectors
             BadSmellDetector smells = new BadSmellDetector(neo);
 
-            List<String> god = smells.detectGodClass();
-            List<String> envy = smells.detectFeatureEnvy();
-            List<String> data = smells.detectDataClass();
-            List<String> longM = smells.detectLongMethod();
-            List<String> large = smells.detectLargeClass();
-            List<String> chain = smells.detectMessageChains();
-            List<String> middle = smells.detectMiddleMan();
-            List<String> shotgun = smells.detectShotgunSurgery();
-            List<String> divergent = smells.detectDivergentChange();
-
-            // 5. Show results UI
             loadResultsWindow(
-                    god, envy, data, longM, large,
-                    chain, middle, shotgun, divergent
+                    smells.detectGodClass(),
+                    smells.detectFeatureEnvy(),
+                    smells.detectDataClass(),
+                    smells.detectLongMethod(),
+                    smells.detectLargeClass(),
+                    smells.detectMessageChains(),
+                    smells.detectMiddleMan(),
+                    smells.detectShotgunSurgery(),
+                    smells.detectDivergentChange()
             );
 
             statusLabel.setText("Analysis completed.");
@@ -121,9 +140,25 @@ public class MainController {
         }
     }
 
-    // ---------------------------------------------
-    // Load Results Window (10 lists)
-    // ---------------------------------------------
+    // -----------------------------------------------------
+    // Remove old .class files (prevents mismatched bytecode)
+    // -----------------------------------------------------
+    private void cleanClassFiles(File folder) {
+        File[] files = folder.listFiles();
+        if (files == null) return;
+
+        for (File f : files) {
+            if (f.isDirectory()) {
+                cleanClassFiles(f);
+            } else if (f.getName().endsWith(".class")) {
+                f.delete();
+            }
+        }
+    }
+
+    // -----------------------------------------------------
+    // Results UI
+    // -----------------------------------------------------
     private void loadResultsWindow(
             List<String> god,
             List<String> envy,
